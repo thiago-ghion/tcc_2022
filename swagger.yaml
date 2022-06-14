@@ -112,26 +112,6 @@ paths:
                schema:
                  $ref: '#/components/schemas/ObjetoErro'   
                 
-  /v1/seguranca/logout:
-    post:
-      summary: Efetua a desconexão
-      tags:
-        - Segurança      
-      description: Efetua a desconexão
-      responses:
-         '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespostaVazia'         
-         '400':
-           description: Falha na autenticação
-           content:
-             application/json:
-               schema:
-                 $ref: '#/components/schemas/ObjetoErro'  
-                
   /v1/horario/listar:
     get:
       security:
