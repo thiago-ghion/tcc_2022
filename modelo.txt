@@ -1,0 +1,154 @@
+able Horario {
+  idHorario int [pk]
+  textoHorario char(5) [not null]
+  indicadorAtivo char(1) [not null]
+}
+
+Table HistoricoHorario {
+  timestampHistorico timestamp [pk]
+  idHorario int [pk]
+  textoTipoAcao char(1) [not null]
+  textoHorario char(5) [not null]
+  indicadorAtivo char(1) [not null]
+}
+
+Table Profissional {
+  idProfissional int [pk]
+  nomeProfissional char(150) [not null]
+  indicadorAtivo char(1) [not null]
+}
+
+Table HistoricoProfissional {
+  timestampHistorico timestamp [pk]
+  idProfissional int [pk]
+  textoTipoAcao char(1) [not null]
+  nomeProfissional char(150) [not null]
+  indicadorAtivo char(1) [not null]
+}
+
+table Paciente {
+  idPaciente int [pk]
+  nomePaciente char(150) [not null]
+  numeroCPF bigint 
+  dataNascimento date 
+  numeroTelefone bigint 
+  enderecoEmail char(255) 
+  tipoOrigemCadastro int [not null]
+  textoSenha char(8) 
+}
+
+table HistoricoPaciente {
+  timestampHistorico timestamp [pk]
+  idPaciente int [pk]
+  textoTipoAcao char(1) [not null]
+  nomePaciente char(150) [not null]
+  numeroCPF bigint 
+  dataNascimento date 
+  numeroTelefone bigint 
+  enderecoEmail char(255) 
+  tipoOrigemCadastro int [not null]
+  textoSenha char(8) 
+}
+
+table TipoOrigemCadastro {
+  tipoOrigemCadastro int [pk]
+  textoTipoOrigemCadastro char(50) [not null]
+}
+
+table Colaborador {
+  idColaborador int [pk]
+  nomeColaborador char(150) [not null]
+  nomeUsuario char(15) [not null]
+  indicadorAdministrador char(1) [not null]
+  indicadorAtivo char(1) [not null]
+  indicadorForcarTrocaSenha char(1) [not null]
+  textoSenha char(8) [not null]
+}
+
+table HistoricoColaborador {
+  timestampHistorico timestamp [pk]
+  idColaborador int [pk]
+  textoTipoAcao char(1) [not null]
+  nomeColaborador char(150) [not null]
+  nomeUsuario char(15) [not null]
+  indicadorAdministrador char(1) [not null]
+  indicadorAtivo char(1) [not null]
+  indicadorForcarTrocaSenha char(1) [not null]
+  textoSenha char(8) [not null]
+}
+
+table VinculoProfissionalHorario {
+  idProfissional int [pk]
+  idHorario int [pk]
+  dataVinculo date [pk]
+  indicadorAtivo char(1) [not null]
+}
+
+ref: VinculoProfissionalHorario.idProfissional > Profissional.idProfissional
+ref: VinculoProfissionalHorario.idHorario > Horario.idHorario
+
+table Consulta {
+  idProfissional int [pk]
+  idHorario int [pk]
+  dataVinculo date [pk]
+  idPaciente int [pk]
+  indicadorConsultaCancelada char(1) [not null]
+  tipoOrigemConsulta int [not null]
+  idColaborador int 
+}
+
+table HistoricoConsulta {
+  timestampHistorico timestamp [pk]
+  idProfissional int [pk]
+  idHorario int [pk]
+  dataVinculo date [pk]
+  idPaciente int [pk]
+  textoTipoAcao char(1) [not null]
+  indicadorConsultaCancelada char(1) [not null]
+  idTipoOrigemConsulta int [not null]
+  idColaborador int 
+}
+
+
+table TipoOrigemConsulta {
+  tipoOrigemConsulta int [pk]
+  textoTipoOrigemConsulta char(50) [not null]
+}
+
+ref: Consulta.idProfissional > VinculoProfissionalHorario.idProfissional
+ref: Consulta.idHorario > VinculoProfissionalHorario.idHorario
+ref: Consulta.dataVinculo > VinculoProfissionalHorario.dataVinculo
+ref: Consulta.idColaborador > Colaborador.idColaborador
+ref: Consulta.tipoOrigemConsulta > TipoOrigemConsulta.tipoOrigemConsulta
+ref: Consulta.idPaciente > Paciente.idPaciente
+
+table TipoAcesso {
+  tipoAcesso int [pk]
+  textoTipoAcesso char(50) [not null]
+}
+
+table RegistroAcesso {
+  timestampAcesso timestamp [pk]
+  tipoAcesso int [pk]
+  credencialAcesso char(255) [not null]
+}
+
+ref: RegistroAcesso.tipoAcesso > TipoAcesso.tipoAcesso
+
+Ref: "Horario"."idHorario" < "HistoricoHorario"."idHorario"
+
+Ref: "Profissional"."idProfissional" < "HistoricoProfissional"."idProfissional"
+
+Ref: "Paciente"."idPaciente" < "HistoricoPaciente"."timestampHistorico"
+
+Ref: "Colaborador"."idColaborador" < "HistoricoColaborador"."idColaborador"
+
+Ref: "Consulta"."idProfissional" < "HistoricoConsulta"."idProfissional"
+
+Ref: "Consulta"."idHorario" < "HistoricoConsulta"."idHorario"
+
+Ref: "Consulta"."dataVinculo" < "HistoricoConsulta"."dataVinculo"
+
+Ref: "Consulta"."idPaciente" < "HistoricoConsulta"."idPaciente"
+
+Ref: "TipoOrigemCadastro"."tipoOrigemCadastro" < "Paciente"."tipoOrigemCadastro"
