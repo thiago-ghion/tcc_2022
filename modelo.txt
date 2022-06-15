@@ -1,4 +1,4 @@
-able Horario {
+Table Horario {
   idHorario int [pk]
   textoHorario char(5) [not null]
   indicadorAtivo char(1) [not null]
