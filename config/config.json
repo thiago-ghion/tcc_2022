@@ -1,0 +1,19 @@
+{
+  "development": {
+    "username": "thiagoghion",
+    "password": null,
+    "database": "desenvolvimento",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "production": {
+    "username": "thiagoghion",
+    "password": null,
+    "database": "desenvolvimento",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "operatorsAliases": false,
+    "use_env_variable": "DATABASE_URL"
+  }
+}

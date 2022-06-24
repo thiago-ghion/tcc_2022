@@ -1,0 +1,1896 @@
+openapi: 3.0.0
+info:
+  title: Agendador de consulta
+  description: Descreve a estrutura de endpoint do projeto agendador de consulta
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/
+    description: Ambiente de execução local
+  - url: https://mock-agendador-consulta.herokuapp.com/
+    description: Ambiente de mock deployado    
+paths:
+  /v1/seguranca/login:
+    post:
+      summary: Autentica credenciais paciente
+      tags:
+        - Segurança
+      description: Gera token de autenticação
+      requestBody:
+        description: O paciente deve informar a credencial para ter acesso ao sistema
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteAutenticado'
+        '400':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+  /v1/seguranca/trocarSenhaPaciente:
+    post:
+      summary: Altera a senha do paciente
+      tags:
+        - Segurança
+      description: Altera a senha do paciente
+      requestBody:
+        description: Altera a senha do paciente
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrocaSenhaPaciente'   
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaTrocaSenha'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'                    
+  /v1/seguranca/loginColaborador:
+    post:
+      summary: Autentica credenciais colaborador
+      tags:
+        - Segurança
+      description: Gera token de autenticação
+      requestBody:
+        description: O colaborador deve informar a credencial para ter acesso ao sistema
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginColaborador'      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColaboradorAutenticado'
+        '400':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'                    
+  /v1/seguranca/trocarSenhaColaborador:
+    post:
+      summary: Altera a senha do colaborador
+      tags:
+        - Segurança
+      description: Altera a senha do colaborador
+      requestBody:
+        description: Altera a senha do colaborador
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrocaSenhaColaborador'   
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaTrocaSenha'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'   
+
+  /v1/seguranca/oauth/facebook/login:
+    post:
+      summary: Redireciona para a autenticação do Facebook
+      tags:
+        - Segurança
+      description: Redireciona para a autenticação do Facebook  
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaVazia'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'   
+
+  /v1/seguranca/oauth/facebook/callback:
+    get:
+      summary: Finaliza a autenticação com o Facebook
+      tags:
+        - Segurança
+      description: Finaliza a autenticação com o Facebook
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteAutenticado'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'   
+
+  /v1/seguranca/oauth/google/login:
+    post:
+      summary: Redireciona para a autenticação do Google
+      tags:
+        - Segurança
+      description: Redireciona para a autenticação do Google  
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaVazia'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'   
+
+  /v1/seguranca/oauth/google/callback:
+    get:
+      summary: Finaliza a autenticação com o Google
+      tags:
+        - Segurança
+      description: Finaliza a autenticação com o Google
+      responses:
+         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteAutenticado'         
+         '400':
+           description: Falha na autenticação
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ObjetoErro'   
+
+
+  /v1/horario/listar:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista os horários parametrizados
+      tags:
+        - Parametrização de horário      
+      description: Lista os horários parametrizados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaHorario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+                
+  /v1/horario/registrar/{horario}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Incluir horário na parametrização
+      tags:
+        - Parametrização de horário      
+      description: Incluir horário na parametrização
+      parameters:
+        - in: path
+          name: horario
+          required: true
+          schema:
+            type: string
+            default: "08:00"
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          description: >
+            Horário
+             * Pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaHorario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'   
+                
+  /v1/horario/ativar/{idHorario}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Ativar horário na parametrização
+      tags:
+        - Parametrização de horário      
+      description: Ativar horário na parametrização
+      parameters:
+        - in: path
+          name: idHorario
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do horário
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaHorario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+  
+  /v1/horario/desativar/{idHorario}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Desativar horário na parametrização
+      tags:
+        - Parametrização de horário      
+      description: Desativar horário na parametrização
+      parameters:
+        - in: path
+          name: idHorario
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do horário
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaHorario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+ 
+  /v1/paciente/consultar:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Consulta o cadastro do paciente
+      tags:
+        - Parametrização de paciente      
+      description: Consulta o cadastro do paciente
+      parameters:
+        - in: query
+          name: idPaciente
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do paciente
+      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaCadastroPaciente'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+                
+  /v1/paciente/listar:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista os pacientes cadastrados
+      tags:
+        - Parametrização de paciente      
+      description: Lista os pacientes cadastrados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaPaciente'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+  
+  /v1/paciente/registrar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Cadastra o paciente
+      tags:
+        - Parametrização de paciente      
+      description: Cadastra o paciente
+      requestBody:
+        description: Cadastra o paciente
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastroPaciente'         
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaCadastroPaciente'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/paciente/alterar/{idPaciente}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Altera o cadastro do paciente
+      tags:
+        - Parametrização de paciente      
+      description: Altera o cadastro do paciente
+      parameters:
+        - in: path
+          name: idPaciente
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do paciente      
+      requestBody:
+        description: Altera o cadastro do paciente
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastroPaciente'         
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaCadastroPaciente'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+                
+  /v1/profissional/registrar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Registrar profissional
+      tags:
+        - Parametrização de profissional      
+      description: Registrar profissional
+      requestBody:
+        description: Registrar profissional
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroProfissional'         
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/profissional/alterar/{idProfissional}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Alterar registro do profissional
+      tags:
+        - Parametrização de profissional      
+      description: Alterar registro do profissional
+      parameters:
+        - in: path
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional      
+      requestBody:
+        description: Alterar registro do profissional
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroProfissional'         
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+  
+  /v1/profissional/ativar/{idProfissional}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Ativar o registro do profissional
+      tags:
+        - Parametrização de profissional      
+      description: Ativar o registro do profissional
+      parameters:
+        - in: path
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/profissional/desativar/{idProfissional}:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Desativar o registro do profissional
+      tags:
+        - Parametrização de profissional      
+      description: Desativar o registro do profissional
+      parameters:
+        - in: path
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/profissional/listarVigente:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista os profissionais ativos
+      tags:
+        - Parametrização de profissional      
+      description: Lista os profissionais ativos  
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/profissional/listarTodos:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista todos profissionais (ativos/inativos)
+      tags:
+        - Parametrização de profissional      
+      description: Lista todos profissionais (ativos/inativos) 
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/profissional/listarDataDisponivel:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista as datas disponíveis para um profissional
+      tags:
+        - Parametrização de profissional      
+      description: Lista as datas disponíveis para um profissional 
+      parameters:
+        - in: query
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional            
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaDataDisponivel'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+                
+  /v1/profissional/listarHorarioDisponivel:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista os horários disponíveis para um profissional
+      tags:
+        - Parametrização de profissional      
+      description: Lista os horários disponíveis para um profissional 
+      parameters:
+        - in: query
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional
+        - in: query
+          name: dataPesquisa
+          required: true
+          schema:
+            type: string
+            default: "02.05.2021"
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data da pesquisa                    
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaHorarioDisponivel'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/usuario/consultar:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Consulta a configuração do usuário
+      tags:
+        - Parametrização de usuário      
+      description: Consulta a configuração do usuário
+      parameters:
+        - in: query
+          name: idUsuario
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do usuário
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+                
+  /v1/usuario/listar:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Lista os usuários registrados
+      tags:
+        - Parametrização de usuário      
+      description: Lista os usuários registrados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaUsuario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/usuario/registrar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Inclui um novo usuário
+      tags:
+        - Parametrização de usuário      
+      description: Inclui um novo usuário
+      requestBody:
+        description: Inclui um novo usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroUsuario'   
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/usuario/alterar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Alterar um usuário
+      tags:
+        - Parametrização de usuário      
+      description: Alterar um usuário
+      requestBody:
+        description: Alterar um usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlterarUsuario'   
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+                
+  /v1/usuario/resetarSenha:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Resetar senha de um usuário
+      tags:
+        - Parametrização de usuário      
+      description: Resetar senha de um usuário
+      requestBody:
+        description: Resetar senha de um usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetarSenhaUsuario'   
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'                  
+
+  /v1/consulta/agendar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Agendar consulta
+      tags:
+        - Consultas      
+      description: Agendar consulta
+      requestBody:
+        description: Agendar consulta
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgendamentoConsulta'         
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoConsulta'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+  /v1/consulta/cancelar:
+    post:
+      security:
+        - bearerAuth: []    
+      summary: Cancelar consulta
+      tags:
+        - Consultas      
+      description: Cancelar consulta
+      requestBody:
+        description: Cancelar consulta
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgendamentoConsulta'         
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoConsulta'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'  
+
+
+  /v1/consulta/listarConsulta:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Listar consultas de um paciente para um profissional em um período de tempo
+      tags:
+        - Consultas      
+      description: Listar consultas de um paciente para um profissional em um período de tempo 
+      parameters:
+        - in: query
+          name: idPaciente
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do paciente
+        - in: query
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional
+        - in: query
+          name: dataInicio
+          required: true
+          schema:
+            type: string
+            default: "01.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data início da consulta
+        - in: query
+          name: dataFim
+          required: true
+          schema:
+            type: string
+            default: "31.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data fim da consulta
+      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaConsulta'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'                  
+
+  /v1/consulta/listarConsultaTodasPaciente:
+    get:
+      security:
+        - bearerAuth: []   
+      summary: Listar consultas de um paciente em um período de tempo
+      tags:
+        - Consultas      
+      description: Listar consultas de um paciente em um período de tempo
+      parameters:
+        - in: query
+          name: idPaciente
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do paciente
+        - in: query
+          name: dataInicio
+          required: true
+          schema:
+            type: string
+            default: "01.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data início da consulta
+        - in: query
+          name: dataFim
+          required: true
+          schema:
+            type: string
+            default: "31.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data fim da consulta
+      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaConsulta'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'                  
+
+  /v1/consulta/listarConsultaTodasProfissional:
+    get:
+      security:
+        - bearerAuth: []    
+      summary: Listar consultas de um profissional em um período de tempo
+      tags:
+        - Consultas      
+      description: Listar consultas de um profissional em um período de tempo
+      parameters:
+        - in: query
+          name: idProfissional
+          required: true
+          schema:
+            type: integer
+            default: 1
+          description: ID do profissional
+        - in: query
+          name: dataInicio
+          required: true
+          schema:
+            type: string
+            default: "01.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data início da consulta
+        - in: query
+          name: dataFim
+          required: true
+          schema:
+            type: string
+            default: "31.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data fim da consulta
+      
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaConsultaProfissional'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro' 
+                
+  /v1/estatistica/listar:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Listar dados estatisticos
+      tags:
+        - Estatísticas        
+      description: Listar dados estatisticos
+      parameters:
+        - in: query
+          name: codigoTipoEstatica
+          required: true
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4, 5]   
+            default: 1
+          description: >
+             Tipo de Estatística:
+              * `1` - 5 horários mais utilizados
+              * `2` - Quantidade de consultas por dia da semana
+              * `3` - 5 profissionais com maior número de consultas
+              * `4` - Quantidade de consultas canceladas versus consultas não canceladas
+              * `5` - Quantidade de utilização de login próprio versus login por OAuth
+          # description: Código do tipo de Estatística  
+        - in: query
+          name: dataInicio
+          required: true
+          schema:
+            type: string
+            default: "01.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data início da pesquisa    
+        - in: query
+          name: dataFim
+          required: true
+          schema:
+            type: string
+            default: "31.05.2022"
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          description: Data fim da pesquisa             
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaEstatica'  
+        '400':
+          description: Falha no processamento da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'    
+        '401':
+          description: Falha na autenticação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjetoErro'                  
+
+components:
+  securitySchemes:
+    bearerAuth:            
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Login:
+      title: Credenciais do paciente
+      type: object
+      properties:
+        usuario:
+          type: string
+          description: Chave da credencial do paciente
+          default: paciente@teste.com
+          pattern: ^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$
+          maxLength: 255
+        senha:
+          type: string
+          description: Senha da credencial do paciente
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+          maxLength: 8
+      required:
+        - usuario
+        - senha
+    LoginColaborador:
+      title: Credenciais do colaborador
+      type: object
+      properties:
+        usuario:
+          type: string
+          description: Chave da credencial do colaborador
+          default: luizsilva
+          pattern: ^[a-zA-Z0-9]{5,15}$
+          maxLength: 15
+        senha:
+          type: string
+          description: Senha da credencial do colaborador
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+          maxLength: 8
+      required:
+        - usuario
+        - senha        
+    PacienteAutenticado:
+      title: Paciente autenticado
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID do paciente
+          default: 2323
+        nome:
+          type: string
+          description: Nome do paciente
+          default: Luiz da Silva
+        access_token:
+          type: string
+          default: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjU1MjI0MDc4LCJleHAiOjE2NTUyMjQwOTh9.9ZZCOohyp-E2C2iRH5RAOA5g9Rx5-jg59dU157g7IeY"
+      required:
+            - id
+            - nome
+            - access_token
+    ObjetoErro:
+      title: Mensagem de erro
+      type: object
+      properties:
+        mensagem:
+          type: string
+          description: Mensagem descrevendo o problema
+          default: Ocorreu uma falha no processamento da requisição  
+      required:
+        - mensagem
+    TrocaSenhaPaciente:
+      title: Credenciais para troca de senha do paciente
+      type: object
+      properties:
+        usuario:
+          type: string
+          description: Chave da credencial do paciente
+          default: paciente@teste.com
+          pattern: ^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$
+          maxLength: 255
+        senhaAnterior:
+          type: string
+          description: Senha da credencial do paciente
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+          maxLength: 8
+        senhaNova:
+          type: string
+          description: Senha da credencial do paciente
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$  
+          maxLength: 8
+      required:
+        - usuario
+        - senhaAnterior
+        - senhaNova
+    TrocaSenhaColaborador:
+      title: Credenciais para troca de senha do colaborador
+      type: object
+      properties:
+        usuario:
+          type: string
+          description: Chave da credencial do colaborador
+          default: luizsilva
+          pattern: ^[a-zA-Z0-9]{5,15}$
+          maxLength: 15
+        senhaAnterior:
+          type: string
+          description: Senha da credencial do paciente
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+          maxLength: 8
+        senhaNova:
+          type: string
+          description: Senha da credencial do paciente
+          default: AB@78hji       
+          pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$  
+          maxLength: 8
+      required:
+        - usuario
+        - senhaAnterior
+        - senhaNova    
+    ColaboradorAutenticado:
+      title: Paciente autenticado
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID do colaborador
+          default: 2323
+        nome:
+          type: string
+          description: Nome do colaborador
+          default: Luiz da Silva
+        access_token:
+          type: string
+          description: Token de acesso
+          default: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjU1MjI0MDc4LCJleHAiOjE2NTUyMjQwOTh9.9ZZCOohyp-E2C2iRH5RAOA5g9Rx5-jg59dU157g7IeY"
+      required:
+        - id
+        - nome
+        - access_token
+    ListaHorario:
+      title: Lista horário
+      type:  array
+      items:
+        type: object
+        properties:
+          idHorario:
+            type: integer
+          horario:
+            type: string
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          indicadorAtivo:
+             type: string
+             enum: ["S", "N"]
+             description: >
+              Indicador de ativo
+                * `S`- Ativo
+                * `N`- Inativo
+        required:
+          - idHorario
+          - horario
+          - indicadorAtivo
+      example:
+        - idHorario: 1
+          horario: "08:00"
+          indicadorAtivo: "S"
+        - idHorario: 2
+          horario: "08:15"
+          indicadorAtivo: "N"
+    RespostaTrocaSenha:
+      type: object
+      properties:
+        id:
+          type: integer
+          default: 1
+        nome:
+          type: string
+          default: "Fulano da Silva"
+      required:
+        - id
+        - nome
+    RespostaVazia:
+      title: Resposta Vazia
+      type: object
+    ListaPaciente:
+      title: Lista paciente
+      type:  array
+      items:
+        type: object
+        properties:
+          idPaciente:
+            type: integer
+          nomePaciente:
+            type: string
+            maxLength: 150
+        required:
+          - idPaciente
+          - nomePaciente
+      example:
+        - idPaciente: 1
+          nomePaciente: "Fulano da Silva"
+        - idPaciente: 2
+          nomePaciente: "Ciclano da Silva"         
+    CadastroPaciente:
+      title: Paciente
+      type: object
+      properties:
+        nomePaciente:
+          type: string
+          default: "Cliente Teste"
+          maxLength: 150
+        numeroCPF:
+          type: integer
+          default: 223345233
+        dataNascimento:
+          type: string
+          default: "01.01.1970"
+          pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          maxLength: 10
+        numeroTelefone:
+          type: string
+          default: "9912345678"
+          pattern: ^([1-9]{2}){0,1}[0-9]{4,5}[0-9]{4}$
+          maxLength: 11
+          description: >
+            Número de telefone com o código de área
+        enderecoEmail:
+          type: string
+          default: "teste@test.com"
+          pattern: ^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$
+          maxLength: 255
+      required:
+        - nomePaciente
+    RespostaCadastroPaciente:
+      title: Resposta Cadastro do Paciente
+      type: object
+      properties:
+        idPaciente:
+          type: integer
+          default: 2443
+        nomePaciente:
+          type: string
+          default: "Cliente Teste"
+          maxLength: 150
+        numeroCPF:
+          type: integer
+          default: 223345233
+        dataNascimento:
+          type: string
+          default: "01.01.1970"
+          pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+          maxLength: 10
+        numeroTelefone:
+          type: string
+          default: "99912345678"
+          pattern: ^([1-9]{2}){0,1}[0-9]{4,5}[0-9]{4}$
+          maxLength: 11
+        enderecoEmail:
+          type: string
+          default: "teste@test.com"
+          pattern: ^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$
+          maxLength: 255
+      required:
+        - idPaciente
+        - nomePaciente
+    AgendamentoConsulta:
+       title: Agendamento da Consulta
+       type: object
+       properties:
+         idPaciente:
+           type: integer
+           default: 1
+         idProfissional:
+           type: integer
+           default: 1
+         dataConsulta:
+           type: string
+           default: "01.05.2022"
+           pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+         idHorario:
+            type: integer
+            default: 1
+       required:
+         - idPaciente
+         - idProfissional
+         - dataConsulta
+         - idHorario
+    ListaConsulta:
+      title: Lista de consulta
+      type: array
+      items:
+          type: object
+          properties:
+            idProfissional:
+              type: integer
+            nomeProfissional:
+              type: string
+              maxLength: 150
+            dataConsulta:
+              type: string
+              pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+              maxLength: 10
+            idHorario:
+              type: integer
+            horario:
+              type: string
+              pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+              maxLength: 5
+            indicadorPermissaoCancelar:
+              type: string
+          required:
+            - idProfissional
+            - nomeProfissional
+            - dataConsulta
+            - idHorario
+            - horario
+            - indicadorPermissaoCancelar
+      example:
+        - idProfissional: 1
+          nomeProfissional: "Médico da Silva"
+          dataConsulta:  "02.05.2022"
+          idHorario: 1
+          horario: "08:00"
+          indicadorPermissaoCancelar: "S"
+    ListaConsultaProfissional:
+      title: Lista de consulta
+      type: array
+      items:
+          type: object
+          properties:
+            idProfissional:
+              type: integer
+            nomeProfissional:
+              type: string
+              maxLength: 150
+            idPaciente:
+              type: integer
+            nomePaciente:
+              type: string
+              maxLength: 150
+            dataConsulta:
+              type: string
+              pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+              maxLength: 10
+            idHorario:
+              type: integer
+            horario:
+              type: string
+              pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+              maxLength: 5
+            indicadorPermissaoCancelar:
+              type: string
+          required:
+            - idProfissional
+            - nomeProfissional
+            - idPaciente
+            - nomePaciente
+            - dataConsulta
+            - idHorario
+            - horario
+            - indicadorPermissaoCancelar
+      example:
+        - idProfissional: 1
+          nomeProfissional: "Médico da Silva"
+          idPaciente: 1
+          nomePaciente: "Fulano da Silva"
+          dataConsulta:  "02.05.2022"
+          idHorario: 1
+          horario: "08:00"
+          indicadorPermissaoCancelar: "S"
+          
+    ListaProfissional:
+      title: Lista de profissional
+      type: array
+      items:
+        type: object
+        properties:
+          idProfissional:
+            type: integer
+          nomeProfissional:
+            type: string
+            maxLength: 150
+        required:
+          - idProfissional
+          - nomeProfissional
+      example:
+        - idProfissional: 1
+          nomeProfissional: "Fulano da Silva"
+        - idProfissional: 2
+          nomeProfissional: "Ciclano da Silva"
+    ListaDataDisponivel:
+      title: Lista de data disponível
+      type: array
+      items:
+        type: object
+        properties:
+          data:
+            type: string
+            maxLength: 10
+            pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+        required:
+          - data
+      example:
+        - data: "01.05.2022"
+        - data: "02.05.2022"
+    ListaHorarioDisponivel:
+      title: Lista de horário disponível
+      type: array
+      items:
+        type: object
+        properties:
+          idHorario:
+            type: integer
+          horario:
+            type: string
+            maxLength: 5
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+        required:
+          - idHorario
+          - horario
+      example:
+        - idHorario: 1
+          horario: "08:00"
+        - idHorario: 2
+          horario: "08:30"    
+    ListaVinculo:
+      title: Lista de vinculos de horário do profissional
+      type: array
+      items:
+        type: object
+        properties:
+          idHorario:
+            type: integer
+          horario:
+            type: string 
+            maxLength: 5
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          indicadorAtivo:
+            type: string
+            maxLength: 1
+            enum: ["S", "N"]
+        required:
+          - idHorario
+          - horario
+          - indicadorAtivo
+      example:
+        - idHorario: 1
+          horario: "08:00"
+          indicadorAtivo: "S"
+        - idHorario: 2
+          horario: "08:30" 
+          indicadorAtivo: "N"
+    RegistroProfissional:
+      type: object
+      properties:
+        nomeProfissional:
+          type: string
+          default: Ciclano da Silva
+          maxLength: 150
+        vinculoDataHorario:
+          type: array
+          items:
+            type: object
+            properties:
+              data:
+                type: string
+                maxLength: 10
+                pattern: ^(((0[1-9]|[12][0-9]|3[01])[- /.](0[13578]|1[02])|(0[1-9]|[12][0-9]|30)[- /.](0[469]|11)|(0[1-9]|1\d|2[0-8])[- /.]02)[- /.]\d{4}|29[- /.]02[- /.](\d{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[1359][26])00))$
+              listaHorario:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    idHorario:
+                      type: integer
+                    acao:
+                      type: string
+                      enum: ["A", "D"]
+                      maxLength: 1
+                      description: >
+                        Indicador de ativar/desativar
+                        * `A` - Ativar
+                        * `D` - Desativar
+                  required:
+                    - idHorario
+                    - acao
+            required:
+              - data
+              - listaHorario
+          example:
+            - data: "02.05.2022"
+              listaHorario:
+              -  idHorario: 1
+                 acao: "A"
+              -  idHorario: 2
+                 acao: "A"
+      required:
+        - nomeProfissional
+        - vinculoDataHorario
+    ListaUsuario:
+      type: array
+      items:
+        type: object
+        properties:
+          idUsuario:
+            type: integer
+          nomeUsuario:
+            type: string
+            maxLength: 15
+            pattern: ^[a-zA-Z0-9]{5,15}$
+        required:
+          - idUsuario
+          - nomeUsuario
+      example:
+        - idUsuario: 1
+          nomeUsuario: "catarina349"
+        - idUsuario: 2
+          nomeUsuario: "luiz374"          
+    Usuario:
+      type: object
+      properties:
+          idUsuario:
+            type: integer
+            default: 1
+          nomeUsuario:
+            type: string
+            default: "catarina349"
+            pattern: ^[a-zA-Z0-9]{5,15}$
+            maxLength: 15
+          nomeColaborador:
+            type: string
+            default: "Catarina da Silva"
+            maxLength: 150
+          isUsuarioAtivo:
+            type: string
+            default: "S"
+            maxLength: 1
+            enum: ["S", "N"]
+          isUsuarioAdministrador:
+            type: string
+            default: "N"
+            maxLength: 1
+            enum: ["S", "N"]      
+      required:
+        - idUsuario
+        - nomeUsuario
+        - nomeColaborador
+        - isUsuarioAtivo
+        - isUsuarioAdministrador
+    RegistroUsuario:
+      type: object
+      properties:
+          nomeUsuario:
+            type: string
+            default: "maria321"
+            pattern: ^[a-zA-Z0-9]{5,15}$
+            maxLength: 15
+          nomeColaborador:
+            type: string
+            default: "Maria da Silva"
+            maxLength: 150
+          isUsuarioAdministrador:
+            type: string
+            default: "N"
+            maxLength: 1
+            enum: ["S", "N"]
+          senha:
+            type: string
+            default: OiYb35*d
+            pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+            maxLength: 8
+      required:
+        - nomeUsuario
+        - nomeColaborador
+        - isUsuarioAdministrador
+        - senha
+    AlterarUsuario:
+      type: object
+      properties:
+          idUsuario:
+            type: integer
+            default: 1
+          nomeColaborador:
+            type: string
+            default: "Catarina da Silva"
+            maxLength: 150
+          isUsuarioAtivo:
+            type: string
+            default: "S"
+            maxLength: 1
+            enum: ["S", "N"]            
+          isUsuarioAdministrador:
+            type: string
+            default: "N"  
+            maxLength: 1
+            enum: ["S", "N"]        
+      required:
+        - idUsuario
+        - nomeColaborador
+        - isUsuarioAtivo
+        - isUsuarioAdministrador
+    ResetarSenhaUsuario:
+      type: object
+      properties:
+          idUsuario:
+            type: integer
+            default: 1
+          senha:
+            type: string
+            default: OiYb35*d
+            pattern: ^(?=.*[A-Z].*[A-Z])(?=.*[!@#$&*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$
+            maxLength: 8  
+      required:
+        - idUsuario
+        - senha
+    ListaEstatica:
+      type: array
+      items:
+        type: object
+        properties:
+          item:
+            type: string
+          valor:
+            type: integer
+        required:
+          - item
+          - valor
+      example:
+          - item: "08:00"
+            valor: 23
+          - item: "10:00"
+            valor: 12 
+          - item: "11:00"
+            valor: 10    
+    RespostaHorario:
+      type: object
+      properties:
+        idHorario:
+          type: integer
+          default: 1
+      required:
+        - idHorario
+    RespostaProfissional:
+      type: object
+      properties:
+        idProfissional:
+          type: integer
+          default: 1
+      required:
+        - idProfissional
