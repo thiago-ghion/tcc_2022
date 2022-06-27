@@ -6,19 +6,23 @@ module.exports = {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
       nomeProfissional: {
         type: Sequelize.STRING(150),
-        allowNull: false
+        allowNull: false,
       },
       indicadorAtivo: {
         type: Sequelize.STRING(1),
-        allowNull: false
-      }
+        allowNull: false,
+      },
+    });
+
+    await queryInterface.addIndex('Profissional', ['indicadorAtivo'], {
+      name: 'iIndicadorAtivo',
     });
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Profissional');
-  }
+  },
 };

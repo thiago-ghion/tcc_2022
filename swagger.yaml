@@ -699,7 +699,21 @@ paths:
           schema:
             type: integer
             default: 1
-          description: ID do profissional            
+          description: ID do profissional  
+        - in: query
+          name: dataInicio
+          required: true
+          schema:
+            type: string
+            default: 05.02.2022
+          description: Data início da pesquisa  
+        - in: query
+          name: dataFim
+          required: true
+          schema:
+            type: string
+            default: 05.02.2022
+          description: Data fim da pesquisa                                     
       responses:
         '200':
           description: OK

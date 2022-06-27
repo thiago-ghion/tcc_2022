@@ -13,15 +13,15 @@ module.exports = {
     await queryInterface.bulkInsert('TipoAcesso', [
       {
         tipoAcesso: 1,
-        textoTipoAcesso: 'Colaborador',
-      },
-      {
-        tipoAcesso: 2,
         textoTipoAcesso: 'Paciente - Interno',
       },
       {
-        tipoAcesso: 3,
+        tipoAcesso: 2,
         textoTipoAcesso: 'Paciente - Externo',
+      },
+      {
+        tipoAcesso: 3,
+        textoTipoAcesso: 'Colaborador',
       },
     ]);
   },

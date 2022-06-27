@@ -4,9 +4,9 @@ const db = require('.././models/index.js');
 
 const SECRET = '38DNDJBB#@3JNEJNDJ3ECDL3dekwJI8hl@#';
 const TEMPO_EXPIRACAO = 3000;
-const TIPO_ACESSO_COLABORADOR = 1;
-const TIPO_ACESSO_PACIENTE_INTERNO = 2;
-const TIPO_ACESSO_PACIENTE_EXTERNO = 3;
+const TIPO_ACESSO_PACIENTE_INTERNO = 1;
+const TIPO_ACESSO_PACIENTE_EXTERNO = 2;
+const TIPO_ACESSO_COLABORADOR = 3;
 
 function registrarMetodos(app, incluirNivelAccesso, passport) {
   const LocalStrategy = require('passport-local').Strategy;

@@ -1,7 +1,7 @@
 const grupoApi = 'profissional';
 const db = require('.././models/index.js');
 const _ = require('underscore');
-const moment = require('moment');
+const Util = require('../util/Util');
 
 const registrarMetodos = (app, incluirNivelAccesso) => {
   const listarVigenteURL = `/v1/${grupoApi}/listarVigente`;
@@ -49,7 +49,7 @@ const registrarMetodos = (app, incluirNivelAccesso) => {
   const ativarURL = `/v1/${grupoApi}/ativar/:idProfissional`;
   incluirNivelAccesso(ativarURL, 3);
   app.post(ativarURL, (req, res) => {
-    desativar(req, res);
+    ativar(req, res);
   });
 
   const desativarURL = `/v1/${grupoApi}/desativar/:idProfissional`;
@@ -58,42 +58,202 @@ const registrarMetodos = (app, incluirNivelAccesso) => {
     desativar(req, res);
   });
 
-  const consultarVinculo = `/v1/${grupoApi}/consultarVinculo/:idProfissional/:dataPesquisa`;
-  incluirNivelAccesso(consultarVinculo, 3);
-  app.get(consultarVinculo, (req, res) => {
+  const consultarVinculoURL = `/v1/${grupoApi}/consultarVinculo/:idProfissional/:dataPesquisa`;
+  incluirNivelAccesso(consultarVinculoURL, 3);
+  app.get(consultarVinculoURL, (req, res) => {
     consultarVinculo(req, res);
   });
 };
 
-const listarVigente = (req, res) => {
-  const resposta = [
-    { idProfissional: 1, nomeProfissional: 'Fulano da Silva' },
-    { idProfissional: 2, nomeProfissional: 'Ciclano da Silva' },
-  ];
+const listarVigente = async (req, res) => {
+  try {
+    const listaProfissional = await db.Profissional.findAll({
+      where: { indicadorAtivo: 'S' },
+    });
 
-  res.send(resposta);
+    const resposta = _(listaProfissional).each((item) => {
+      return {
+        idProfissional: item.idProfissional,
+        nomeProfissional: item.nomeProfissional,
+      };
+    });
+
+    res.send(resposta);
+  } catch {
+    res
+      .status(400)
+      .send({ mensagem: 'Falha na consulta da lista de profisssionais' });
+  }
 };
 
-const listarTodos = (req, res) => {
-  const resposta = [
-    { idProfissional: 1, nomeProfissional: 'Fulano da Silva' },
-    { idProfissional: 2, nomeProfissional: 'Ciclano da Silva' },
-    { idProfissional: 3, nomeProfissional: 'Teste da Silva' },
-  ];
-  res.send(resposta);
+const listarTodos = async (req, res) => {
+  try {
+    const listaProfissional = await db.Profissional.findAll();
+
+    const resposta = _(listaProfissional).each((item) => {
+      return {
+        idProfissional: item.idProfissional,
+        nomeProfissional: item.nomeProfissional,
+      };
+    });
+
+    res.send(resposta);
+  } catch {
+    res
+      .status(400)
+      .send({ mensagem: 'Falha na consulta da lista de profisssionais' });
+  }
 };
 
-const listarDataDisponivel = (req, res) => {
-  const resposta = [{ data: '01.05.2022' }, { data: '02.05.2022' }];
-  res.send(resposta);
+const listarDataDisponivel = async (req, res) => {
+  try {
+    if (req.query.idProfissional === undefined) {
+      res
+        .status(400)
+        .send({ mensagem: 'Número do profissional não foi informado' });
+      return;
+    }
+
+    const profissional = await db.Profissional.findOne({
+      where: { idProfissional: req.query.idProfissional },
+    });
+
+    if (profissional === null) {
+      res.status(400).send({ mensagem: 'Profissional não foi encontrado' });
+      return;
+    }
+
+    if (req.query.dataInicio === undefined) {
+      res
+        .status(400)
+        .send({ mensagem: 'Data início da pesquisa não foi informada' });
+      return;
+    }
+
+    if (!Util.isDataValida(req.query.dataInicio)) {
+      res.status(400).send({
+        mensagem: 'Data início da pesquisa está com formato incorreto',
+      });
+      return;
+    }
+
+    if (req.query.dataFim === undefined) {
+      res
+        .status(400)
+        .send({ mensagem: 'Data fim da pesquisa não foi informada' });
+      return;
+    }
+
+    if (!Util.isDataValida(req.query.dataFim)) {
+      res.status(400).send({
+        mensagem: 'Data fim da pesquisa está com formato incorreto',
+      });
+      return;
+    }
+
+    if (Util.quantidadeDias(req.query.dataInicio, req.query.dataFim) > 60) {
+      res.status(400).send({
+        mensagem: 'Intervalo superior a 60 dias corridos',
+      });
+      return;
+    }
+
+    const dataInicio = Util.converterEmDataIso(req.query.dataInicio);
+    const dataFim = Util.converterEmDataIso(req.query.dataFim);
+
+    const listaData = await db.sequelize.query(
+      `
+         SELECT DISTINCT "dataVinculo"  
+         FROM  "VinculoProfissionalHorario" A
+         WHERE  A."idProfissional"  = ${req.query.idProfissional}
+         AND    A."indicadorAtivo"  = 'S'
+         AND    A."dataVinculo" BETWEEN '${dataInicio}' AND '${dataFim}' 
+         AND NOT EXISTS 
+              (SELECT 1 
+               FROM "Consulta" B 
+               WHERE A."idProfissional" = B."idProfissional" 
+               AND   A."idHorario"      = B."idHorario" 
+               AND   A."dataVinculo"    = B."dataVinculo" 
+               AND   B."indicadorConsultaCancelada" = 'N')
+    `,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
+
+    const resposta = _(listaData).map((item) => ({
+      data: Util.formatarData(item.dataVinculo),
+    }));
+
+    res.send(resposta);
+  } catch (err) {
+    console.log(err);
+    res
+      .status(400)
+      .send({ mensagem: 'Falha na recuperação da lista de datas disponíveis' });
+  }
 };
 
-const listarHorarioDisponivel = (req, res) => {
-  const resposta = [
-    { idHorario: 1, horario: '08:00' },
-    { idHorario: 2, horario: '08:30' },
-  ];
-  res.send(resposta);
+const listarHorarioDisponivel = async (req, res) => {
+  try {
+    if (req.query.idProfissional === undefined) {
+      res
+        .status(400)
+        .send({ mensagem: 'Número do profissional não foi informado' });
+      return;
+    }
+
+    const profissional = await db.Profissional.findOne({
+      where: { idProfissional: req.query.idProfissional },
+    });
+
+    if (profissional === null) {
+      res.status(400).send({ mensagem: 'Profissional não foi encontrado' });
+      return;
+    }
+
+    if (req.query.dataPesquisa === undefined) {
+      res.status(400).send({ mensagem: 'Data da pesquisa não foi informada' });
+      return;
+    }
+
+    if (!Util.isDataValida(req.query.dataPesquisa)) {
+      res.status(400).send({
+        mensagem: 'Data da pesquisa está com formato incorreto',
+      });
+      return;
+    }
+
+    const data = Util.converterEmDataIso(req.query.dataPesquisa);
+    const listaData = await db.sequelize.query(
+      `
+      SELECT H."idHorario", H."textoHorario"  
+      FROM "VinculoProfissionalHorario" A, 
+           "Horario" H
+      WHERE A."idProfissional"  =  ${req.query.idProfissional}
+      AND   A."indicadorAtivo"  =  'S'
+      AND   A."dataVinculo"     =  '${data}'
+      AND   H."idHorario"       =  A."idHorario"
+      AND NOT EXISTS 
+            (SELECT 1 
+             FROM "Consulta" B 
+             WHERE A."idProfissional"             = B."idProfissional" 
+             AND   A."idHorario"                  = B."idHorario" 
+             AND   A."dataVinculo"                = B."dataVinculo" 
+             AND   B."indicadorConsultaCancelada" = 'N')
+    `,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
+
+    const resposta = _(listaData).map((item) => ({
+      idHorario: item.idHorario,
+      horario: item.textoHorario,
+    }));
+
+    res.send(resposta);
+  } catch (err) {
+    res.status(400).send({
+      mensagem: 'Falha na recuperação da lista de horários disponíveis',
+    });
+  }
 };
 
 const listarConfiguracaoHorario = (req, res) => {
@@ -123,7 +283,7 @@ const validarProfissional = async (req, res) => {
 
       let temErro = false;
       _(req.body.vinculoDataHorario).each((item) => {
-        if (item.data === null || !moment(item.data, 'DD.MM.YYYY').isValid()) {
+        if (item.data === null || !Util.isDataValida(item.data)) {
           temErro = true;
         }
         if (item.listaHorario === null || item.listaHorario.length === 0) {
@@ -243,10 +403,7 @@ const registrar = async (req, res) => {
                 {
                   idProfissional: resultado.idProfissional,
                   idHorario: itemHorario.idHorario,
-                  dataVinculo: moment(
-                    itemVinculo.data,
-                    'DD.MM.YYYY'
-                  ).toISOString(),
+                  dataVinculo: Util.converterEmDataIso(itemVinculo.data),
                   indicadorAtivo: itemHorario.acao === 'A' ? 'S' : 'N',
                 },
                 { transaction: t }
@@ -272,18 +429,74 @@ const alterar = (req, res) => {
   res.send(resposta);
 };
 
-const ativar = (req, res) => {
-  const resposta = {
-    idProfissional: 1,
-  };
-  res.send(resposta);
+const habilitacao = async (
+  situacaoAtivacao,
+  mensagemErroAtivacao,
+  req,
+  res
+) => {
+  if (req.params.idProfissional === null) {
+    res.status(400).send({
+      mensagem: 'Número do profissional não foi informado',
+    });
+    return false;
+  }
+
+  try {
+    const profissional = await db.Profissional.findOne({
+      where: { idProfissional: req.params.idProfissional },
+    });
+
+    if (profissional === null) {
+      res.status(400).send({
+        mensagem: 'Profissional não foi encontrado',
+      });
+      return false;
+    }
+
+    if (profissional.indicadorAtivo === situacaoAtivacao) {
+      res.status(400).send({
+        mensagem: mensagemErroAtivacao,
+      });
+      return false;
+    }
+
+    await db.sequelize.transaction(async (t) => {
+      await profissional.update(
+        { indicadorAtivo: situacaoAtivacao },
+        { transaction: t }
+      );
+
+      await db.HistoricoProfissional.create(
+        {
+          timestampHistorico: db.sequelize.literal('CURRENT_TIMESTAMP'),
+          textoTipoAcao: 'A',
+          idProfissional: profissional.idProfissional,
+          nomeProfissional: profissional.nomeProfissional,
+          indicadorAtivo: profissional.indicadorAtivo,
+        },
+        { transaction: t }
+      );
+
+      const resposta = {
+        idProfissional: profissional.idProfissional,
+      };
+      res.send(resposta);
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({
+      mensagem: 'Falha na ativação do profissional',
+    });
+  }
+};
+
+const ativar = async (req, res) => {
+  habilitacao('S', 'Profissional já está ativo', req, res);
 };
 
 const desativar = (req, res) => {
-  const resposta = {
-    idProfissional: 1,
-  };
-  res.send(resposta);
+  habilitacao('N', 'Profissional já está desativado', req, res);
 };
 
 const consultarVinculo = (req, res) => {
