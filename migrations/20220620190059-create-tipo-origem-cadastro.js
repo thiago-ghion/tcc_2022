@@ -9,6 +9,18 @@ module.exports = {
       },
       textoTipoOrigemCadastro: { type: Sequelize.STRING(50), allowNull: false },
     });
+
+    await queryInterface.bulkInsert('TipoOrigemCadastro', [
+      {
+        tipoOrigemCadastro: 1,
+        textoTipoOrigemCadastro: 'Próprio paciente',
+      },
+      {
+        tipoOrigemCadastro: 2,
+        textoTipoOrigemCadastro: 'Colaborador',
+      }
+    ]);
+
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('TipoOrigemCadastro');
