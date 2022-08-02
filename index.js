@@ -1,8 +1,11 @@
+const logger = require('./util/logger');
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+logger.info(`Utilizando a porta ${port}`);
 
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
@@ -18,8 +21,20 @@ const horario = require('./api/horario');
 const usuario = require('./api/usuario');
 const estatistica = require('./api/estatistica');
 
+app.use(express.json());
+app.use(cors());
+app.get('/', function (req, res) {
+  res.sendFile('index.html', { root: __dirname + '/' });
+});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.use(function (req, res, next) {
-  if (req.url.match('seguranca') || req.url.match('api-docs')) {
+  if (
+    req.url.match('seguranca') ||
+    req.url.match('api-docs') ||
+    req.url.match('introspect') ||
+    req.method === 'OPTIONS'
+  ) {
     next();
   } else {
     req.nivelUsuarioEndpoint = 99;
@@ -28,36 +43,32 @@ app.use(function (req, res, next) {
         req.nivelUsuarioEndpoint = item.nivel;
       }
     });
+    logger.info(`Requisição ${req.url} - Nível: ${req.nivelUsuarioEndpoint}`);
 
-    passport.authenticate('jwt', { session: false }, (err, user) => {
-      if (err || !user) {
+    passport.authenticate('jwt', { session: false }, (err, token) => {
+      logger.info(`Autenticando o token local`, token);
+      if (err || !token) {
         if (err !== null && err.message !== null) {
-          return res.status(401).json({
-            message: err.message,
+          return res.status(401).send({
+            mensagem: err.message,
           });
         }
-        return res.status(401).json({
-          message: 'Token de acesso inválido',
+        logger.error(`Token local inválido`, err);
+
+        return res.status(401).send({
+          mensagem: 'Efetue o login novamente, a sessão expirou',
         });
       } else {
+        req.token = token;
         next();
       }
     })(req, res);
   }
-}); 
-
-app.get('/', function (req, res) {
-  res.sendFile('index.html', { root: __dirname + '/' });
 });
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-app.use(express.json());
-app.use(cors());
 
 const listaAcesso = [];
 
-const incluirNivelAccesso = (_rota, nivel) => {
+const incluirNivelAcesso = (_rota, nivel) => {
   const posicao = _rota.indexOf(':');
   let rota = _rota;
   if (posicao != -1) {
@@ -67,12 +78,20 @@ const incluirNivelAccesso = (_rota, nivel) => {
   listaAcesso.push({ rota, nivel });
 };
 
-seguranca.registrarMetodos(app, incluirNivelAccesso, passport);
-profissional.registrarMetodos(app, incluirNivelAccesso);
-consulta.registrarMetodos(app, incluirNivelAccesso);
-paciente.registrarMetodos(app, incluirNivelAccesso);
-horario.registrarMetodos(app, incluirNivelAccesso);
-usuario.registrarMetodos(app, incluirNivelAccesso);
-estatistica.registrarMetodos(app, incluirNivelAccesso);
+logger.info('Inicializando os services');
+seguranca.registrarMetodos(app, incluirNivelAcesso, passport);
+logger.info('Segurança - OK');
+profissional.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Profissional - OK');
+consulta.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Consulta - OK');
+paciente.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Paciente - OK');
+horario.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Horario - OK');
+usuario.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Usuario - OK');
+estatistica.registrarMetodos(app, incluirNivelAcesso);
+logger.info('Estatistica - OK');
 
 app.listen(port, () => {});

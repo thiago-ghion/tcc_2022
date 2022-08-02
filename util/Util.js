@@ -34,6 +34,9 @@ const quantidadeDias = (_dataInicio, _dataFim) => {
 
 const converterEmDataIso = (data) => moment(data, 'DD.MM.YYYY').toISOString();
 
+const converterEmDataInvertida = (data) =>
+  moment(data, 'DD.MM.YYYY').format('YYYY-MM-DD');
+
 const formatarData = (data) => moment(data).format('DD.MM.YYYY');
 
 const calculoDigito = (multiplicador, tamanho, array_cpf) => {
@@ -43,24 +46,13 @@ const calculoDigito = (multiplicador, tamanho, array_cpf) => {
     soma += array_cpf[i] * multiplicador--;
   }
 
-  let digito = 0;
-  const resto = (soma * 10) % 11;
-
-  switch (resto) {
-    case 10:
-    case 11:
-      digito = 0;
-      break;
-    default:
-      digito = resto;
-      break;
-  }
-
-  return digito;
+  return 11 - (soma % 11);
 };
 
 const isCPFValido = (cpf) => {
+  console.log('cpf', cpf);
   if (cpf === undefined || !_.isNumber(cpf)) {
+    console.log('não é número');
     return false;
   }
 
@@ -71,14 +63,17 @@ const isCPFValido = (cpf) => {
 
   const primeiroDigito = calculoDigito(10, 8, array_cpf);
   if (array_cpf[9] !== `${primeiroDigito}`) {
+    console.log('primeiro digito errado');
     return false;
   }
 
   const segundoDigito = calculoDigito(11, 9, array_cpf);
   if (array_cpf[10] !== `${segundoDigito}`) {
+    console.log('segundo digito errado');
     return false;
   }
 
+  console.log('CPF, OK');
   return true;
 };
 
@@ -108,6 +103,28 @@ const formatarNulidade = (campo) => {
   return campo === undefined ? null : campo;
 };
 
+const isDataAnterior = (_dataBase, _dataComparacao) => {
+  const dataBase = moment(_dataBase, 'DD.MM.YYYY HH:mm');
+  const dataCompararacao = moment(_dataComparacao, 'DD.MM.YYYY HH:mm');
+
+  return dataCompararacao.isSameOrBefore(dataBase);
+};
+
+const getDataHoraAtual = () => moment().format('DD.MM.YYYY HH:mm');
+
+const formatarDataHora = (data) => moment(data).format('DD.MM.YYYY HH:mm');
+
+const isSenhaValida = (senha) => {
+  const patternSenha =
+    '^(?=.*[A-Z].*[A-Z])(?=.*[!@#<% swaggerOptions %>*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$';
+
+  if (!senha.match(patternSenha)) {
+    return false;
+  }
+
+  return true;
+};
+
 module.exports = {
   isDataValida,
   quantidadeDias,
@@ -118,4 +135,9 @@ module.exports = {
   isEmailValido,
   formatarMinusculo,
   formatarNulidade,
+  isDataAnterior,
+  getDataHoraAtual,
+  formatarDataHora,
+  isSenhaValida,
+  converterEmDataInvertida,
 };

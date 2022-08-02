@@ -2,6 +2,7 @@ const grupoApi = 'paciente';
 const db = require('.././models/index.js');
 const _ = require('underscore');
 const Util = require('../util/Util');
+const logger = require('../util/logger');
 
 const registrarMetodos = (app, incluirNivelAccesso) => {
   const listarURL = `/v1/${grupoApi}/listar`;
@@ -40,6 +41,7 @@ const listarTodos = async (req, res) => {
 
     res.send(resposta);
   } catch (error) {
+    logger.error('Falha na lista de pacientes', error);
     res
       .status(400)
       .send({ mensagem: 'Falha na consulta da lista de pacientes' });
@@ -76,15 +78,31 @@ const consultar = async (req, res) => {
 
     res.send(resposta);
   } catch (error) {
-    console.log(error);
     res.status(400).send({ mensagem: 'Falha na consulta do paciente' });
   }
 };
 
 const validarPaciente = (req, res) => {
   try {
+    const isColaborador =
+      req.token.nivelUsuario === 2 || req.token.nivelUsuario === 3;
+
     if (req.body.nomePaciente === undefined) {
-      res.status(400).send({ mensagem: 'Nome do paciente não informado' });
+      res
+        .status(400)
+        .send({ mensagem: 'Nome do paciente não informado', campo: 1 });
+      return false;
+    }
+
+    if (req.body.nomePaciente === '') {
+      res
+        .status(400)
+        .send({ mensagem: 'Nome do paciente não informado', campo: 1 });
+      return false;
+    }
+
+    if (isColaborador && req.body.numeroCPF === undefined) {
+      res.status(400).send({ mensagem: 'CPF do paciente inválido', campo: 2 });
       return false;
     }
 
@@ -92,7 +110,15 @@ const validarPaciente = (req, res) => {
       req.body.numeroCPF !== undefined &&
       !Util.isCPFValido(req.body.numeroCPF)
     ) {
-      res.status(400).send({ mensagem: 'CPF do paciente inválido' });
+      res.status(400).send({ mensagem: 'CPF do paciente inválido', campo: 2 });
+      return false;
+    }
+
+    if (isColaborador && req.body.dataNascimento === undefined) {
+      res.status(400).send({
+        mensagem: 'Data de nascimento do paciente inválido',
+        campo: 3,
+      });
       return false;
     }
 
@@ -100,7 +126,17 @@ const validarPaciente = (req, res) => {
       req.body.dataNascimento !== undefined &&
       !Util.isDataValida(req.body.dataNascimento)
     ) {
-      res.status(400).send({ mensagem: 'CPF do paciente inválido' });
+      res.status(400).send({
+        mensagem: 'Data de nascimento do paciente inválido',
+        campo: 3,
+      });
+      return false;
+    }
+
+    if (isColaborador && req.body.numeroTelefone === undefined) {
+      res
+        .status(400)
+        .send({ mensagem: 'Telefone do paciente inválido', campo: 4 });
       return false;
     }
 
@@ -108,18 +144,34 @@ const validarPaciente = (req, res) => {
       req.body.numeroTelefone !== undefined &&
       !Util.isTelefoneValido(req.body.numeroTelefone)
     ) {
-      res.status(400).send({ mensagem: 'Telefone do paciente inválido' });
+      res
+        .status(400)
+        .send({ mensagem: 'Telefone do paciente inválido', campo: 4 });
+      return false;
+    }
+
+    if (
+      (!isColaborador && req.body.enderecoEmail === undefined) ||
+      (!isColaborador && req.body.enderecoEmail === '')
+    ) {
+      res
+        .status(400)
+        .send({ mensagem: 'Email do paciente inválido', campo: 5 });
       return false;
     }
 
     if (
       req.body.enderecoEmail !== undefined &&
+      req.body.enderecoEmail !== '' &&
       !Util.isEmailValido(req.body.enderecoEmail)
     ) {
-      res.status(400).send({ mensagem: 'Email do paciente inválido' });
+      res
+        .status(400)
+        .send({ mensagem: 'Email do paciente inválido', campo: 5 });
       return false;
     }
   } catch (error) {
+    console.log('error', error);
     res
       .status(400)
       .send({ mensagem: 'Falha validação do registro do paciente' });
@@ -144,6 +196,7 @@ const registrar = async (req, res) => {
       if (paciente !== null) {
         res.status(400).send({
           mensagem: 'Email informado já está registrado para outro paciente',
+          campo: 5,
         });
         return;
       }
@@ -203,7 +256,6 @@ const registrar = async (req, res) => {
       res.status(201).send(resposta);
     });
   } catch (error) {
-    console.log(error);
     res.status(400).send({ mensagem: 'Falha no registro do paciente' });
   }
 };
@@ -228,6 +280,21 @@ const alterar = async (req, res) => {
     if (paciente === null) {
       res.status(400).send({ mensagem: 'Paciente não encontrado' });
       return;
+    }
+
+    if (req.body.enderecoEmail !== undefined) {
+      const paciente = await db.Paciente.findOne({
+        where: {
+          enderecoEmail: Util.formatarMinusculo(req.body.enderecoEmail),
+        },
+      });
+      if (paciente !== null) {
+        res.status(400).send({
+          mensagem: 'Email informado já está registrado para outro paciente',
+          campo: 5,
+        });
+        return;
+      }
     }
 
     await db.sequelize.transaction(async (t) => {
@@ -284,9 +351,8 @@ const alterar = async (req, res) => {
       res.send(resposta);
     });
   } catch (error) {
-    console.log(error);
     res.status(400).send({ mensagem: 'Falha na alteração do paciente' });
   }
 };
 
-module.exports = { registrarMetodos };
+module.exports = { registrarMetodos, listarTodos, consultar };

@@ -1,6 +1,8 @@
 const grupoApi = 'seguranca';
 const jwt = require('jsonwebtoken');
 const db = require('.././models/index.js');
+const logger = require('../util/logger');
+const Util = require('../util/Util');
 
 const SECRET = '38DNDJBB#@3JNEJNDJ3ECDL3dekwJI8hl@#';
 const TEMPO_EXPIRACAO = 3000;
@@ -22,31 +24,46 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
 
         if (req.body.tipoLogin !== 1 && req.body.tipoLogin !== 2) {
           return done(
-            { message: 'Tipo de autenticação não esperado' },
+            { mensagem: 'Tipo de autenticação não esperado' },
             null,
             {}
           );
         }
 
         if (req.body.tipoLogin === 2) {
+          logger.info(`Autenticando usuário local ${usuario}`);
           try {
             const colaborador = await db.Colaborador.findOne({
               where: { nomeUsuario: usuario },
             });
 
+            console.log('colaborador', colaborador);
             if (colaborador === null) {
-              return done({ message: 'Usuário/Senha inválido' }, null, {});
+              logger.info(`Usuário/Senha inválido - usuário local ${usuario}`);
+              return done({ mensagem: 'Usuário/Senha inválido' }, null, {});
             }
 
             if (
               colaborador.textoSenha === senha &&
               colaborador.indicadorAtivo === 'S'
             ) {
+              logger.info(`Registrando o acesso - usuário local ${usuario}`);
               await db.RegistroAcesso.create({
                 timestampAcesso: db.sequelize.literal('CURRENT_TIMESTAMP'),
                 tipoAcesso: TIPO_ACESSO_COLABORADOR,
                 credencialAcesso: usuario,
               });
+
+              if (colaborador.indicadorForcarTrocaSenha === 'S') {
+                return done(
+                  {
+                    mensagem: 'Usuário deve trocar a senha antes de prosseguir',
+                    senhaResetada: true,
+                  },
+                  null,
+                  {}
+                );
+              }
 
               return done(
                 null,
@@ -60,11 +77,14 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
                 {}
               );
             } else {
-              return done({ message: 'Usuário/Senha inválido' }, null, {});
+              console.log(`${colaborador.textoSenha} === ${senha} &&
+                ${colaborador.indicadorAtivo} === 'S'`);
+              return done({ mensagem: 'Usuário/Senha inválido' }, null, {});
             }
-          } catch {
+          } catch (error) {
+            logger.error(`Erro na autenticação do usuário local`, error);
             return done(
-              { message: 'Falha na consulta da autenticação' },
+              { mensagem: 'Falha na consulta da autenticação' },
               null,
               {}
             );
@@ -90,13 +110,19 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
           const nivelUsuarioEndpoint = req.nivelUsuarioEndpoint || 99;
 
           if (jwtPayload.nivelUsuario < nivelUsuarioEndpoint) {
+            logger.info(
+              `Usuário não tem acesso para o recurso - ${req.url} - nivelUsuario:${jwtPayload.nivelUsuario} nivelUsuarioEndpoint:${req.nivelUsuarioEndpoint}`,
+              jwtPayload
+            );
             return done(
-              { message: 'Usuário não possui acesso a funcionalidade' },
+              { mensagem: 'Usuário não possui acesso a funcionalidade' },
               null
             );
           }
-          return done(null, {});
-        } catch {}
+          return done(null, jwtPayload);
+        } catch (error) {
+          logger.error('Erro na validação do Token JWT', error);
+        }
       }
     )
   );
@@ -106,7 +132,7 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
     passport.authenticate('local', { session: false }, (err, user, info) => {
       if (err || !user) {
         return res.status(400).json({
-          message: err.message,
+          mensagem: err.message,
         });
       }
       req.login(user, { session: false }, (err) => {
@@ -124,8 +150,15 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
     req.body.tipoLogin = 2;
     passport.authenticate('local', { session: false }, (err, user, info) => {
       if (err || !user) {
-        return res.status(400).json({
-          message: err.message,
+        console.log('err', err);
+        if (err.senhaResetada !== undefined) {
+          return res.status(400).send({
+            mensagem: err.mensagem,
+            senhaResetada: true,
+          });
+        }
+        return res.status(400).send({
+          mensagem: err.mensagem,
         });
       }
       req.login(user, { session: false }, (err) => {
@@ -162,7 +195,29 @@ function registrarMetodos(app, incluirNivelAccesso, passport) {
   app.get(`/v1/${grupoApi}/oauth/google/callback`, (req, res) => {
     callbackGoogle(req, res);
   });
+
+  app.post(`/v1/${grupoApi}/token/introspect/:token`, (req, res) => {
+    introspect(req, res);
+  });
+
+  const listaAcessoURL = `/v1/${grupoApi}/listaAcesso`;
+  incluirNivelAccesso(listaAcessoURL, 3);
+  app.get(listaAcessoURL, (req, res) => {
+    listarRegistroAcesso(req, res);
+  });
 }
+
+const introspect = (req, res) => {
+  jwt.verify(req.params.token, SECRET, (err, decoded) => {
+    if (err) {
+      res
+        .status(400)
+        .send({ mensagem: 'Efetue o login novamente, a sessão expirou' });
+      return;
+    }
+    res.send(decoded);
+  });
+};
 
 function gerarJWT(user) {
   const token = jwt.sign(
@@ -179,6 +234,7 @@ function gerarJWT(user) {
   );
   return {
     id: user.id,
+    usuario: user.usuario,
     nome: user.nome,
     nivelUsuario: user.nivelUsuario,
     access_token: token,
@@ -190,10 +246,96 @@ function trocarSenhaPaciente(req, res) {
   res.send(resposta);
 }
 
-function trocarSenhaColaborador(req, res) {
-  const resposta = { id: 234, nome: 'Fulano da Silva' };
-  res.send(resposta);
-}
+const trocarSenhaColaborador = async (req, res) => {
+  if (req.body.usuario === undefined) {
+    res.status(400).send({ mensagem: 'Usuário não informado' });
+    return false;
+  }
+
+  if (req.body.senhaAnterior === undefined) {
+    res
+      .status(400)
+      .send({ mensagem: 'Senha anterior não foi informada', campo: 1 });
+    return false;
+  }
+
+  if (!Util.isSenhaValida(req.body.senhaAnterior)) {
+    res
+      .status(400)
+      .send({ mensagem: 'Senha anterior está no formato incorreto', campo: 1 });
+    return false;
+  }
+
+  if (req.body.senhaNova === undefined) {
+    res
+      .status(400)
+      .send({ mensagem: 'Senha nova não foi informada', campo: 2 });
+    return false;
+  }
+
+  if (!Util.isSenhaValida(req.body.senhaNova)) {
+    res
+      .status(400)
+      .send({ mensagem: 'Senha nova está no formato incorreto', campo: 2 });
+    return false;
+  }
+
+  if (req.body.senhaNova === req.body.senhaAnterior) {
+    res.status(400).send({
+      mensagem: 'Senha nova e anterior são iguais, informe outra senha',
+      campo: 2,
+    });
+    return false;
+  }
+
+  try {
+    const colaborador = await db.Colaborador.findOne({
+      where: {
+        nomeUsuario: req.body.usuario.toLocaleLowerCase(),
+        textoSenha: req.body.senhaAnterior,
+      },
+    });
+
+    if (colaborador === null) {
+      res.status(400).send({ mensagem: 'Usuário não encontrado' });
+      return;
+    }
+
+    await db.sequelize.transaction(async (t) => {
+      const resposta = {
+        id: colaborador.idColaborador,
+        nome: colaborador.nomeColaborador,
+      };
+
+      await colaborador.update(
+        { textoSenha: req.body.senhaNova, indicadorForcarTrocaSenha: 'N' },
+        { transaction: t }
+      );
+
+      await db.HistoricoColaborador.create(
+        {
+          timestampHistorico: db.sequelize.literal('CURRENT_TIMESTAMP'),
+          textoTipoAcao: 'A',
+          idColaborador: colaborador.idColaborador,
+          nomeColaborador: colaborador.nomeColaborador,
+          nomeUsuario: colaborador.nomeUsuario,
+          indicadorAdministrador: colaborador.indicadorAdministrador,
+          indicadorAtivo: colaborador.indicadorAtivo,
+          indicadorForcarTrocaSenha: 'N',
+          textoSenha: req.body.senhaNova,
+        },
+        { transaction: t }
+      );
+
+      res.status(200).send(resposta);
+    });
+  } catch (error) {
+    logger.error('Falha na alteração da senha do colaborador', error);
+    res
+      .status(400)
+      .send({ mensagem: 'Falha na alteração da senha do colaborador' });
+  }
+};
 
 function loginFacebook(req, res) {
   res.redirect('https://www.facebook.com/login');
@@ -212,5 +354,62 @@ function callbackGoogle(req, res) {
   const token = gerarJWT(req, res);
   return res.json(token);
 }
+
+const listarRegistroAcesso = async (req, res) => {
+  try {
+    console.log('req', req.query);
+    if (req.query.dataInicio === undefined || req.query.dataInicio === 'null') {
+      res
+        .status(400)
+        .send({ mensagem: 'Data início da pesquisa não foi informada' });
+      return;
+    }
+
+    if (req.query.dataFim === undefined || req.query.dataFim === 'null') {
+      res
+        .status(400)
+        .send({ mensagem: 'Data fim da pesquisa não foi informada' });
+      return;
+    }
+
+    try {
+      if (Util.quantidadeDias(req.query.dataInicio, req.query.dataFim) > 30) {
+        res
+          .status(400)
+          .send({
+            mensagem: 'Consulta deve ter o intervalo máximo de 30 dias',
+          });
+        return;
+      }
+    } catch (error) {
+      res.status(400).send({ mensagem: error.message });
+      return;
+    }
+
+    const lista = await db.sequelize.query(
+      `
+      SELECT  A."timestampAcesso" , 
+              A."tipoAcesso" , 
+              B."textoTipoAcesso", 
+              A."credencialAcesso" 
+      FROM "RegistroAcesso" A, 
+           "TipoAcesso" B
+      WHERE A."timestampAcesso" BETWEEN timestamp '${Util.converterEmDataInvertida(
+        req.query.dataInicio
+      )} 00:00:00' 
+      AND      timestamp '${Util.converterEmDataInvertida(
+        req.query.dataFim
+      )} 23:59:59'
+      AND   A."tipoAcesso"  = B."tipoAcesso"
+      `,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
+
+    res.send(lista);
+  } catch (error) {
+    logger.error('Falha na lista de acessos', error);
+    res.status(400).send({ mensagem: 'Falha na consulta da lista de acessos' });
+  }
+};
 
 module.exports = { registrarMetodos };

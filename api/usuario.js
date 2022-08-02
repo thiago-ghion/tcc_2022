@@ -1,7 +1,9 @@
 const grupoApi = 'usuario';
 const db = require('.././models/index.js');
+const logger = require('../util/logger.js');
+const Util = require('../util/Util');
 
-registrarMetodos = (app, incluirNivelAccesso) => {
+const registrarMetodos = (app, incluirNivelAccesso) => {
   const consultarURL = `/v1/${grupoApi}/consultar`;
   incluirNivelAccesso(consultarURL, 3);
   app.get(consultarURL, (req, res) => {
@@ -36,7 +38,7 @@ registrarMetodos = (app, incluirNivelAccesso) => {
 const consultar = async (req, res) => {
   const idUsuario = req.query.idUsuario;
 
-  if (idUsuario === null) {
+  if (idUsuario === undefined) {
     res.status(400).send({ mensagem: 'ID do usuário não informado' });
     return;
   }
@@ -50,6 +52,7 @@ const consultar = async (req, res) => {
 
     if (colaborador === null) {
       res.status(400).send({ mensagem: 'Usuário não encontrado' });
+      return;
     }
 
     res.send({
@@ -59,7 +62,8 @@ const consultar = async (req, res) => {
       isUsuarioAtivo: colaborador.indicadorAtivo,
       isUsuarioAdministrador: colaborador.indicadorAdministrador,
     });
-  } catch (err) {
+  } catch (error) {
+    logger.error('Falha na consulta de usuário', error);
     res.status(400).send({ mensagem: 'Falha na consulta de usuário' });
   }
 };
@@ -75,27 +79,32 @@ const listar = async (req, res) => {
         return {
           idUsuario: item.idColaborador,
           nomeUsuario: item.nomeUsuario,
+          nomeColaborador: item.nomeColaborador,
+          indicadorAdministrador: item.indicadorAdministrador,
+          indicadorAtivo: item.indicadorAtivo,
         };
       })
     );
-  } catch (err) {
+  } catch (error) {
+    logger.error('Falha na consulta de usuário', error);
     res.status(400).send({ mensagem: 'Falha na consulta de usuário' });
   }
 };
 
 const isSenhaValida = (senha, res) => {
-  if (senha === null || senha === '') {
-    res.status(400).send({ mensagem: 'Senha do usuário não foi preenchida' });
+  if (senha === undefined || senha === '') {
+    res
+      .status(400)
+      .send({ mensagem: 'Senha do usuário não foi preenchida', campo: 3 });
     return false;
   }
 
-  const patternSenha =
-    '^(?=.*[A-Z].*[A-Z])(?=.*[!@#<% swaggerOptions %>*])(?=.*[0-9].*[0-9])(?=.*[a-z].*[a-z].*[a-z]).{8}$';
-
-  if (!senha.match(patternSenha)) {
-    res
-      .status(400)
-      .send({ mensagem: 'Senha do usuário está no formato incorreto' });
+  if (!Util.isSenhaValida(senha)) {
+    res.status(400).send({
+      mensagem:
+        'Senha do usuário deve conter 2 letras maiúsculas, 3 minúsculas, 2 números e 1 símbolo especial',
+      campo: 3,
+    });
     return false;
   }
   return true;
@@ -105,30 +114,33 @@ const isColaboradorValido = (req, res, validaInclusao) => {
   const { nomeColaborador, nomeUsuario, isUsuarioAdministrador, senha } =
     req.body;
 
-  if (nomeColaborador === null || nomeColaborador === '') {
-    res
-      .status(400)
-      .send({ mensagem: 'Nome do colaborador não foi preenchido' });
-    return false;
-  }
-
   if (validaInclusao) {
-    if (nomeUsuario === null || nomeUsuario === '') {
-      res.status(400).send({ mensagem: 'Nome do usuário não foi preenchido' });
+    if (nomeUsuario === undefined || nomeUsuario === '') {
+      res
+        .status(400)
+        .send({ mensagem: 'Nome do usuário não foi preenchido', campo: 1 });
       return false;
     }
 
     const patternUsuario = '^[a-zA-Z0-9]{5,15}$';
 
     if (!nomeUsuario.match(patternUsuario)) {
-      res
-        .status(400)
-        .send({ mensagem: 'Nome do usuário está no formato incorreto' });
+      res.status(400).send({
+        mensagem: 'Nome do usuário está no formato incorreto',
+        campo: 1,
+      });
       return false;
     }
   }
 
-  if (isUsuarioAdministrador === null || isUsuarioAdministrador === '') {
+  if (nomeColaborador === undefined || nomeColaborador === '') {
+    res
+      .status(400)
+      .send({ mensagem: 'Nome do colaborador não foi preenchido', campo: 2 });
+    return false;
+  }
+
+  if (isUsuarioAdministrador === undefined || isUsuarioAdministrador === '') {
     res.status(400).send({
       mensagem: 'Indicador de perfil de administrador não foi preenchido',
     });
@@ -316,11 +328,21 @@ const resetarSenha = async (req, res) => {
 
       res.send(resposta);
     });
-  } catch (err) {
+  } catch (error) {
+    logger.error('Falha na reinicialização da senha do usuário', error);
     res
       .status(400)
       .send({ mensagem: 'Falha na reinicialização da senha do usuário' });
   }
 };
 
-module.exports = { registrarMetodos };
+module.exports = {
+  registrarMetodos,
+  consultar,
+  listar,
+  registrar,
+  alterar,
+  resetarSenha,
+  isSenhaValida,
+  isColaboradorValido,
+};

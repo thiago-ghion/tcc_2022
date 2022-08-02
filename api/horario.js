@@ -29,15 +29,16 @@ const registrarMetodos = (app, incluirNivelAccesso) => {
 
 const registrar = async (req, res) => {
   if (isHorarioValido(req, res)) {
-    const horario = await db.Horario.findOne({
-      where: { textoHorario: req.params.horario },
-    });
-
-    if (horario) {
-      res.status(400).send({ mensagem: 'Horário já está parametrizado' });
-    }
-
     try {
+      const horario = await db.Horario.findOne({
+        where: { textoHorario: req.params.horario },
+      });
+
+      if (horario) {
+        res.status(400).send({ mensagem: 'Horário já está parametrizado' });
+        return;
+      }
+
       await db.sequelize.transaction(async (t) => {
         const resultado = await db.Horario.create(
           {
@@ -86,6 +87,8 @@ const listar = async (req, res) => {
           };
         })
       );
+    } else {
+      res.send([]);
     }
   } catch (err) {
     res.status(400).send({ mensagem: 'Falha na consulta do horário' });
@@ -105,6 +108,25 @@ const manutencaoSituacao = async (situacao, req, res) => {
           situacao === 'S' ? 'ativado' : 'desativado'
         }`;
         res.status(400).send({ mensagem });
+        return;
+      }
+
+      const vinculo = await db.sequelize.query(
+        `
+        SELECT 1 
+        FROM   "VinculoProfissionalHorario" 
+        WHERE  "idHorario" = ${req.params.idHorario}
+        AND    "indicadorAtivo" = 'S'
+        AND    "dataVinculo" >= current_date 
+      `,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+
+      if (vinculo.length !== 0) {
+        res.status(400).send({
+          mensagem:
+            'Horário possui profissional vinculado, desative o vínculo antes de prosseguir',
+        });
         return;
       }
 
@@ -141,17 +163,25 @@ const isHorarioValido = (req, res) => {
   const pattern = '^([01][0-9]|2[0-3]):[0-5][0-9]$';
   const horario = req.params.horario;
 
-  if (horario === null) {
+  if (horario === undefined) {
     res.status(400).send({ mensagem: 'O horário não foi informado' });
     return false;
   }
 
   if (!horario.match(pattern)) {
-    res.status(400).send({ mensagem: 'Horário fora do padrão' });
+    res.status(400).send({ mensagem: 'Horário fora do padrão - HH:MM' });
     return false;
   }
 
   return true;
 };
 
-module.exports = { registrarMetodos };
+module.exports = {
+  registrarMetodos,
+  registrar,
+  listar,
+  manutencaoSituacao,
+  ativar,
+  desativar,
+  isHorarioValido,
+};
